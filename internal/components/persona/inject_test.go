@@ -11,6 +11,7 @@ import (
 	"github.com/gentleman-programming/gentle-ai/internal/agents"
 	"github.com/gentleman-programming/gentle-ai/internal/agents/antigravity"
 	"github.com/gentleman-programming/gentle-ai/internal/agents/claude"
+	"github.com/gentleman-programming/gentle-ai/internal/agents/codex"
 	"github.com/gentleman-programming/gentle-ai/internal/agents/hermes"
 	"github.com/gentleman-programming/gentle-ai/internal/agents/kilocode"
 	"github.com/gentleman-programming/gentle-ai/internal/agents/kimi"
@@ -22,6 +23,7 @@ import (
 
 func antigravityAdapter() agents.Adapter { return antigravity.NewAdapter() }
 func claudeAdapter() agents.Adapter      { return claude.NewAdapter() }
+func codexAdapter() agents.Adapter       { return codex.NewAdapter() }
 func hermesAdapter() agents.Adapter      { return hermes.NewAdapter() }
 func kimiAdapter() agents.Adapter        { return kimi.NewAdapter() }
 func kilocodeAdapter() agents.Adapter    { return kilocode.NewAdapter() }
@@ -442,6 +444,35 @@ func TestInjectOpenCodeGentlemanWritesAgentsFile(t *testing.T) {
 	}
 	if !strings.Contains(text, "<!-- gentle-ai:persona -->") {
 		t.Fatal("AGENTS.md missing persona marker")
+	}
+}
+
+func TestInjectCodexGentlemanWritesManagedPersonaSection(t *testing.T) {
+	home := t.TempDir()
+
+	result, err := Inject(home, codexAdapter(), model.PersonaGentleman)
+	if err != nil {
+		t.Fatalf("Inject() error = %v", err)
+	}
+	if !result.Changed {
+		t.Fatalf("Inject() changed = false")
+	}
+
+	path := filepath.Join(home, ".codex", "AGENTS.md")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+
+	text := string(content)
+	for _, want := range []string{
+		"<!-- gentle-ai:persona -->",
+		"Senior Architect",
+		"<!-- /gentle-ai:persona -->",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("AGENTS.md missing %q; got:\n%s", want, text)
+		}
 	}
 }
 
